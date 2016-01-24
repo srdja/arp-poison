@@ -3,7 +3,6 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <getopt.h>
-#include <pthread.h>
 #include <sys/types.h>
 #include <unistd.h>
 
@@ -13,8 +12,6 @@
 #include "spoof.h"
 
 #define PROGRAM "acp"
-
-pthread_t quit_thread;
 
 pcap_t *pcap_h;
 char error_buff[ERROR_BUFF_LEN];
@@ -126,15 +123,6 @@ void save_pid(char *file_name)
 }
 
 
-void *quit_key(__attribute__((unused)) void *var)
-{
-    while (getchar() != 'q');
-    exit(0);
-
-    return NULL; /* Unreachable */
-}
-
-
 struct option long_options[] = {
     {"help",            no_argument,       NULL, 'h'},
     {"verbose",         no_argument,       NULL, 'v'},
@@ -173,12 +161,6 @@ int main(int argc, char **argv)
         case '?': printf("See 'acp --help' for more information\n");
                   return 1;
         }
-    }
-
-    // init quit key
-    if (pthread_create(&quit_thread, NULL, quit_key, NULL)) {
-        fprintf(stderr, "Unable to create the quit key thread\n");
-        return 1;
     }
 
     /* If no device is specified use the default one */
