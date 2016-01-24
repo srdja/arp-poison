@@ -135,7 +135,7 @@ static void *get_reply(void *arg)
         }
         pthread_mutex_unlock(&share->lock);
     }
-    return (void*) status;
+    return (void*) ((uintptr_t) status);
 }
 
 
