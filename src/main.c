@@ -5,6 +5,7 @@
 #include <getopt.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <signal.h>
 
 #include "def.h"
 #include "util.h"
@@ -135,8 +136,26 @@ struct option long_options[] = {
 };
 
 
+void cleanup(void)
+{
+    pcap_close(pcap_h);
+}
+
+
+void signal_handler(int signal)
+{
+    if (signal == SIGINT) {
+        cleanup();
+        exit(0);
+    }
+}
+
+
 int main(int argc, char **argv)
 {
+    if (signal(SIGINT, signal_handler) == SIG_ERR)
+        fprintf(stderr, "Cannot capture SIGINT\n");
+
     int   sniff_timeout   = 5000;
     int   resolve_timeout = 5000;
     bool  gratuitous      = false;
@@ -165,7 +184,7 @@ int main(int argc, char **argv)
 
     /* If no device is specified use the default one */
     if (!device) {
-        if (device = pcap_lookupdev(error_buff) == NULL) {
+        if ((device = pcap_lookupdev(error_buff)) == NULL) {
             fprintf(stderr, "%s\n", pcap_geterr(pcap_h));
             fprintf(stderr, "No usable device found... exiting\n");
             exit(1);
@@ -248,6 +267,6 @@ int main(int argc, char **argv)
     spoof_init(pcap_h, targets, &local_addr, gratuitous);
     spoof_run();
 
-    pcap_close(pcap_h);
+    cleanup();
     return 0;
 }
