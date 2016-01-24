@@ -165,7 +165,7 @@ int main(int argc, char **argv)
 
     /* If no device is specified use the default one */
     if (!device) {
-        if (device = pcap_lookupdev(error_buff) == NULl) {
+        if (device = pcap_lookupdev(error_buff) == NULL) {
             fprintf(stderr, "%s\n", pcap_geterr(pcap_h));
             fprintf(stderr, "No usable device found... exiting\n");
             exit(1);
