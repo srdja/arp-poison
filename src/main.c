@@ -57,12 +57,12 @@ void handle_init_pcap(char *device, int pcap_timeout)
     }
 
     if (pcap_compile(pcap_h, &filter, filter_exp, 1, PCAP_NETMASK_UNKNOWN) == -1) {
-        fprintf(stderr, "%s", pcap_geterr(pcap_h));
+        fprintf(stderr, "%s\n", pcap_geterr(pcap_h));
         exit(1);
     }
 
     if (pcap_setfilter(pcap_h, &filter) == -1) {
-        fprintf(stderr, "%s", pcap_geterr(pcap_h));
+        fprintf(stderr, "%s\n", pcap_geterr(pcap_h));
         exit(1);
     }
 
@@ -165,8 +165,11 @@ int main(int argc, char **argv)
 
     /* If no device is specified use the default one */
     if (!device) {
-        device = pcap_lookupdev(error_buff);
-        // check for pcap error
+        if (device = pcap_lookupdev(error_buff) == NULl) {
+            fprintf(stderr, "%s\n", pcap_geterr(pcap_h));
+            fprintf(stderr, "No usable device found... exiting\n");
+            exit(1);
+        }
     }
 
     /* Get device information */
@@ -190,7 +193,7 @@ int main(int argc, char **argv)
         if ((ip1_len = strlen(argv[options_index])) > IP_STRING_LEN - 1 ||
             (ip2_len = strlen(argv[options_index + 1])) > IP_STRING_LEN - 1)
         {
-            // descriptive error
+            fprintf(stderr, "Invalid address format\n");
             print_usage();
         }
 
@@ -200,7 +203,7 @@ int main(int argc, char **argv)
         if (!inet_pton(AF_INET, ip1, &targets[T1].ip) ||
             !inet_pton(AF_INET, ip2, &targets[T2].ip))
         {
-            // descriptive error....
+            fprintf(stderr, "Invalid address format\n");
             print_usage();
         }
 
@@ -212,6 +215,7 @@ int main(int argc, char **argv)
             strlen(argv[options_index + 2]) != (MAC_STRING_LEN - 1) ||
             strlen(argv[options_index + 3]) != (MAC_STRING_LEN - 1))
         {
+            fprintf(stderr, "Invalid address format\n");
             print_usage();
         }
 
@@ -225,6 +229,7 @@ int main(int argc, char **argv)
             !is_valid_mac(mac1) ||
             !is_valid_mac(mac2))
         {
+            fprintf(stderr, "Invalid address format\n");
             print_usage();
         }
 
