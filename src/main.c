@@ -202,7 +202,6 @@ int main(int argc, char **argv)
         }
 
         handle_remote_resolve(T1, resolve_timeout);
-//        sleep(15);
         handle_remote_resolve(T2, resolve_timeout);
     } else if (remaining_args == 4) {
         if ((ip1_len = strlen(argv[options_index])) > (IP_STRING_LEN - 1) ||
