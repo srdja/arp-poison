@@ -4,6 +4,8 @@
 #include <stdbool.h>
 #include <getopt.h>
 #include <pthread.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include "def.h"
 #include "util.h"
@@ -39,6 +41,7 @@ void print_usage(void)
     printf(" -g, --gratuitous       if set the spoof replies will be sent as gratuitous replies\n");
     printf(" -r, --resolve-timeout  MAC address resolution timeout in miliseconds \n");
     printf(" -s, --sniff-timeout    traffic sniffing timeout in miliseconds\n");
+    printf(" -p, --write-pid        writes the pid of this process to the specified file\n");
 
     exit(0);
 }
@@ -108,6 +111,21 @@ void handle_local_resolve(char *dev, Host *local) {
 }
 
 
+void save_pid(char *file_name)
+{
+    FILE *pid_file = fopen(file_name, "w+");
+
+    if (!pid_file) {
+        fprintf(stderr, "Cannot write PID to file %s\n", file_name);
+        exit(1);
+    }
+    pid_t pid = getpid();
+    fprintf(pid_file, "%d", pid);
+    fprintf(stdout, "Process pid = %d\n", pid);
+    fclose(pid_file);
+}
+
+
 void *quit_key(__attribute__((unused)) void *var)
 {
     while (getchar() != 'q');
@@ -124,6 +142,7 @@ struct option long_options[] = {
     {"interface",       required_argument, NULL, 'i'},
     {"resolve-timeout", required_argument, NULL, 'r'},
     {"sniff-timeout",   required_argument, NULL, 's'},
+    {"write-pid",       required_argument, NULL, 'p'},
     {0, 0, 0, 0}
 };
 
@@ -136,7 +155,7 @@ int main(int argc, char **argv)
     char *device          = NULL;
 
     int c;
-    while ((c = getopt_long(argc, argv, "hvgi:r:s:", long_options, NULL)) != -1) {
+    while ((c = getopt_long(argc, argv, "hvgi:r:s:p:", long_options, NULL)) != -1) {
         switch (c) {
         case 'h': print_usage();
         case 'v': verbose = true;
@@ -148,6 +167,8 @@ int main(int argc, char **argv)
         case 'r': resolve_timeout = strtol(optarg, NULL, 10);
                   break;
         case 's': sniff_timeout = strtol(optarg, NULL, 10);
+                  break;
+        case 'p': save_pid(optarg);
                   break;
         case '?': printf("See 'acp --help' for more information\n");
                   return 1;
