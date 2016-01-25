@@ -90,5 +90,6 @@ typedef enum acp_stat_e {
 
 
 extern bool verbose;
+extern bool unspoof;
 
 #endif

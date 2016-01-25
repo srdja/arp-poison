@@ -8,7 +8,7 @@
 
 #define PACKET_LEN ETH_HEADER_LEN + ARP_HEADER_LEN
 
-
+static bool       spoof_running = false;
 static pcap_t    *pcap_handle;
 static Host       local;
 static Host       targets[TARGETS];
@@ -106,6 +106,31 @@ static void send_spoof_packet(enum target T)
 }
 
 
+static void send_unspoofs(void)
+{
+    uint8_t   buff[PACKET_LEN];
+    ARPPacket pack;
+
+    memcpy(&pack.des_ip, targets[T2].ip, IP_SIZE);
+    memcpy(&pack.des_mac, targets[T2].mac, MAC_SIZE);
+    memcpy(&pack.src_ip, targets[T1].ip, IP_SIZE);
+    memcpy(&pack.src_mac, targets[T1].mac, MAC_SIZE);
+
+    write_packet(&pack, buff, true);
+    pcap_inject(pcap_handle, (uint8_t*) &buff, PACKET_LEN);
+
+    memset(&pack, 0, sizeof(ARPPacket));
+
+    memcpy(&pack.des_ip, targets[T1].ip, IP_SIZE);
+    memcpy(&pack.des_mac, targets[T1].mac, MAC_SIZE);
+    memcpy(&pack.src_ip, targets[T2].ip, IP_SIZE);
+    memcpy(&pack.src_mac, targets[T2].mac, MAC_SIZE);
+
+    write_packet(&pack, buff, true);
+    pcap_inject(pcap_handle, (uint8_t*) &buff, PACKET_LEN);
+}
+
+
 void spoof_init(pcap_t *pcap_h, Host t[TARGETS], Host *l, bool grat)
 {
     pcap_handle = pcap_h;
@@ -122,4 +147,16 @@ int spoof_run(void)
     send_spoof_packet(T2);
 
     return pcap_loop(pcap_handle, 0, respoof, NULL);
+}
+
+
+void spoof_stop(void)
+{
+    if (!spoof_running)
+        return;
+
+    if (unspoof)
+        send_unspoofs();
+
+    pcap_breakloop(pcap_handle);
 }

@@ -6,5 +6,6 @@
 
 void spoof_init (pcap_t *pcap_h, Host targets[TARGETS], Host *local, bool grat);
 int  spoof_run  (void);
+int  spoof_stop (void);
 
 #endif

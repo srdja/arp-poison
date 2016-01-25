@@ -27,6 +27,7 @@ struct bpf_program filter;
 Host targets[TARGETS];
 Host local_addr;
 bool verbose = false;
+bool unspoof = false;
 
 
 void print_usage(void)
@@ -40,6 +41,7 @@ void print_usage(void)
     printf(" -r, --resolve-timeout  MAC address resolution timeout in miliseconds \n");
     printf(" -s, --sniff-timeout    traffic sniffing timeout in miliseconds\n");
     printf(" -p, --write-pid        writes the pid of this process to the specified file\n");
+    printf(" -u  --unspoof          if set the targets will be unspoofed on exit\n");
 
     exit(0);
 }
@@ -132,12 +134,14 @@ struct option long_options[] = {
     {"resolve-timeout", required_argument, NULL, 'r'},
     {"sniff-timeout",   required_argument, NULL, 's'},
     {"write-pid",       required_argument, NULL, 'p'},
+    {"unspoof",         no_argument,       NULL, 'u'},
     {0, 0, 0, 0}
 };
 
 
 void cleanup(void)
 {
+    spoof_stop();
     pcap_close(pcap_h);
 }
 
@@ -162,7 +166,7 @@ int main(int argc, char **argv)
     char *device          = NULL;
 
     int c;
-    while ((c = getopt_long(argc, argv, "hvgi:r:s:p:", long_options, NULL)) != -1) {
+    while ((c = getopt_long(argc, argv, "hvgi:r:s:p:u", long_options, NULL)) != -1) {
         switch (c) {
         case 'h': print_usage();
         case 'v': verbose = true;
@@ -176,6 +180,8 @@ int main(int argc, char **argv)
         case 's': sniff_timeout = strtol(optarg, NULL, 10);
                   break;
         case 'p': save_pid(optarg);
+                  break;
+        case 'u': unspoof = true;
                   break;
         case '?': printf("See 'acp --help' for more information\n");
                   return 1;
