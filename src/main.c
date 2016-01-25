@@ -33,14 +33,17 @@ bool unspoof = false;
 void print_usage(void)
 {
     printf("Usage: %s [OPTIONS]... [IP1][IP2] ...(optional)[MAC1][MAC2]\n\n", PROGRAM);
-    printf("NOTE: If the MAC addresses are not specified, they are resolved.\n\n");
+    printf(" Address formats are 255.255.255.255 for IP and FF:FF:FF:FF:FF:FF for MAC\n");
+    printf(" Specifying the MAC addresses is optional. Either none, or both of them need\n");
+    printf(" to be specified. If they are not specified, they are sesolved by sending\n");
+    printf(" out an ARP request to both targets.\n\n");
     printf(" -h, --help             print this help message\n");
     printf(" -v, --verbose          verbose output\n");
     printf(" -i, --interface        interface to use. If none is specified, the default interface is used\n");
     printf(" -g, --gratuitous       if set the spoof replies will be sent as gratuitous replies\n");
     printf(" -r, --resolve-timeout  MAC address resolution timeout in miliseconds \n");
     printf(" -s, --sniff-timeout    traffic sniffing timeout in miliseconds\n");
-    printf(" -p, --write-pid        writes the pid of this process to the specified file\n");
+    printf(" -p, --write-pid        writes the process id of this process to the specified file\n");
     printf(" -u  --unspoof          if set the targets will be unspoofed on exit\n");
 
     exit(0);
