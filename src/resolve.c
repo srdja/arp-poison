@@ -209,7 +209,7 @@ ACP_STATUS resolve_remote_mac(pcap_t *pcap, Host *local, Host *remote, uint64_t 
     if (!share.resolved)
         return ACP_ERR_TIMEOUT;
 
-    memcpy(&remote->mac, &share.remote.mac, sizeof(MAC_SIZE));
+    memcpy(&remote->mac, &share.remote.mac, MAC_SIZE);
 
     return ACP_SUCCESS;
 }
