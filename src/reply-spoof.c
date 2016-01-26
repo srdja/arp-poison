@@ -6,8 +6,6 @@
 #include "util.h"
 
 
-#define PACKET_LEN ETH_HEADER_LEN + ARP_HEADER_LEN
-
 static bool       spoof_running = false;
 static pcap_t    *pcap_handle;
 static Host       local;

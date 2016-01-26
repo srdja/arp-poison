@@ -53,6 +53,7 @@ typedef struct __attribute__((packed)) arp_header {
 
 #define ETH_HEADER_LEN sizeof(EthernetHeader)
 #define ARP_HEADER_LEN sizeof(ARPHeader)
+#define PACKET_LEN ETH_HEADER_LEN + ARP_HEADER_LEN
 
 #define TARGETS 2
 
