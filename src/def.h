@@ -71,6 +71,8 @@ typedef struct host {
 
 
 typedef struct packet {
+    uint8_t  eth_src_mac[MAC_SIZE];
+    uint8_t  eth_des_mac[MAC_SIZE];
     uint8_t  arp_des_mac[MAC_SIZE];
     uint8_t  arp_src_mac[MAC_SIZE];
     uint8_t  arp_des_ip[IP_SIZE];
