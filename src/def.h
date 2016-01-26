@@ -71,11 +71,11 @@ typedef struct host {
 
 
 typedef struct packet {
-    uint8_t  des_mac[MAC_SIZE];
-    uint8_t  src_mac[MAC_SIZE];
-    uint8_t  des_ip[IP_SIZE];
-    uint8_t  src_ip[IP_SIZE];
-    uint16_t operation;
+    uint8_t  arp_des_mac[MAC_SIZE];
+    uint8_t  arp_src_mac[MAC_SIZE];
+    uint8_t  arp_des_ip[IP_SIZE];
+    uint8_t  arp_src_ip[IP_SIZE];
+    uint16_t arp_operation;
 } ARPPacket;
 
 

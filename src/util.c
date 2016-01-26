@@ -72,11 +72,11 @@ void print_mac(FILE *f, uint8_t mac[MAC_SIZE])
 void print_packet(ARPPacket *p)
 {
     fprintf(stdout, "Sending spoof from ");
-    print_mac(stdout, p->src_mac);
+    print_mac(stdout, p->arp_src_mac);
     fprintf(stdout, " to ");
-    print_mac(stdout, p->des_mac);
+    print_mac(stdout, p->arp_des_mac);
     fprintf(stdout, " as ");
-    print_ip(stdout, p->src_ip);
+    print_ip(stdout, p->arp_src_ip);
     fprintf(stdout, "\n");
 }
 
