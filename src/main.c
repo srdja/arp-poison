@@ -10,7 +10,7 @@
 #include "def.h"
 #include "util.h"
 #include "resolve.h"
-#include "reply-spoof.h"
+#include "spoof.h"
 
 #define PROGRAM "acp"
 
