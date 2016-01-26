@@ -10,7 +10,7 @@
 #include "def.h"
 #include "util.h"
 #include "resolve.h"
-#include "spoof.h"
+#include "reply-spoof.h"
 
 #define PROGRAM "acp"
 
@@ -144,7 +144,7 @@ struct option long_options[] = {
 
 void cleanup(void)
 {
-    spoof_stop();
+    reply_spoof_stop();
     pcap_close(pcap_h);
 }
 
@@ -273,8 +273,8 @@ int main(int argc, char **argv)
         print_host_info(&targets[T2]);
     }
 
-    spoof_init(pcap_h, targets, &local_addr, gratuitous);
-    spoof_run();
+    reply_spoof_init(pcap_h, targets, &local_addr, gratuitous);
+    reply_spoof_run();
 
     cleanup();
     return 0;

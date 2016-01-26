@@ -131,7 +131,7 @@ static void send_unspoofs(void)
 }
 
 
-void spoof_init(pcap_t *pcap_h, Host t[TARGETS], Host *l, bool grat)
+void reply_spoof_init(pcap_t *pcap_h, Host t[TARGETS], Host *l, bool grat)
 {
     pcap_handle = pcap_h;
 
@@ -141,7 +141,7 @@ void spoof_init(pcap_t *pcap_h, Host t[TARGETS], Host *l, bool grat)
 }
 
 
-int spoof_run(void)
+int reply_spoof_run(void)
 {
     send_spoof_packet(T1);
     send_spoof_packet(T2);
@@ -150,7 +150,7 @@ int spoof_run(void)
 }
 
 
-void spoof_stop(void)
+void reply_spoof_stop(void)
 {
     if (!spoof_running)
         return;
