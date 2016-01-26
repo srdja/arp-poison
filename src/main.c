@@ -45,6 +45,7 @@ void print_usage(void)
     printf(" -s, --sniff-timeout    traffic sniffing timeout in miliseconds\n");
     printf(" -p, --write-pid        writes the process id of this process to the specified file\n");
     printf(" -u  --unspoof          if set the targets will be unspoofed on exit\n");
+    printf(" -q  --spoof-requests   if set, ARP requests will be used for spoofing instead of replies\n");
 
     exit(0);
 }
@@ -138,13 +139,14 @@ struct option long_options[] = {
     {"sniff-timeout",   required_argument, NULL, 's'},
     {"write-pid",       required_argument, NULL, 'p'},
     {"unspoof",         no_argument,       NULL, 'u'},
+    {"spoof-requests",  no_argument,       NULL, 'q'},
     {0, 0, 0, 0}
 };
 
 
 void cleanup(void)
 {
-    reply_spoof_stop();
+    spoof_stop();
     pcap_close(pcap_h);
 }
 
@@ -166,10 +168,11 @@ int main(int argc, char **argv)
     int   sniff_timeout   = 5000;
     int   resolve_timeout = 5000;
     bool  gratuitous      = false;
+    bool  use_requests    = false;
     char *device          = NULL;
 
     int c;
-    while ((c = getopt_long(argc, argv, "hvgi:r:s:p:u", long_options, NULL)) != -1) {
+    while ((c = getopt_long(argc, argv, "hvgi:r:s:p:uq", long_options, NULL)) != -1) {
         switch (c) {
         case 'h': print_usage();
         case 'v': verbose = true;
@@ -185,6 +188,8 @@ int main(int argc, char **argv)
         case 'p': save_pid(optarg);
                   break;
         case 'u': unspoof = true;
+                  break;
+        case 'q': use_requests = true;
                   break;
         case '?': printf("See 'acp --help' for more information\n");
                   return 1;
@@ -273,8 +278,8 @@ int main(int argc, char **argv)
         print_host_info(&targets[T2]);
     }
 
-    reply_spoof_init(pcap_h, targets, &local_addr, gratuitous);
-    reply_spoof_run();
+    spoof_init(pcap_h, targets, &local_addr, gratuitous, use_requests);
+    spoof_run();
 
     cleanup();
     return 0;

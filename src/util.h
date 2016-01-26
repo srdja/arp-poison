@@ -10,7 +10,7 @@ bool ip_match     (const uint8_t ip1[IP_SIZE], const uint8_t ip2[IP_SIZE]);
 bool to_bin_mac   (char mac_str[MAC_STRING_LEN], uint8_t mac_bin[MAC_SIZE]);
 bool is_valid_mac (char mac[MAC_STRING_LEN]);
 
-void print_ip        (FILE *f, uint8_t ip[IP_SIZE]);
+void print_ip        (FILE *f, const uint8_t ip[IP_SIZE]);
 void print_mac       (FILE *f, uint8_t mac[MAC_SIZE]);
 void print_packet    (ARPPacket *packet);
 void print_host_info (Host *h);

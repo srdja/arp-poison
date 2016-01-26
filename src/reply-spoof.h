@@ -4,8 +4,8 @@
 #include <pcap.h>
 #include "def.h"
 
-void reply_spoof_init (pcap_t *pcap_h, Host targets[TARGETS], Host *local, bool grat);
-int  reply_spoof_run  (void);
-int  reply_spoof_stop (void);
+void spoof_init (pcap_t *pcap_h, Host targets[TARGETS], Host *local, bool grat, bool use_request);
+int  spoof_run  (void);
+int  spoof_stop (void);
 
 #endif

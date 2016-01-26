@@ -52,7 +52,7 @@ bool to_bin_mac(char mac_str[MAC_STRING_LEN], uint8_t mac_bin[MAC_SIZE])
 }
 
 
-void print_ip(FILE *f, uint8_t ip[IP_SIZE])
+void print_ip(FILE *f, const uint8_t ip[IP_SIZE])
 {
     struct in_addr address;
     memcpy(&address, ip, IP_SIZE);
